@@ -14,9 +14,12 @@ public class TheSaboteur extends AdvancedRobot
 {
 	// private 
 	/**
-	 * run: EverlastEngineeringTheSaboteur's default behavior
+	 * run: EverlastEngineering: TheSaboteur
 	 */
-	private boolean activeRadar = true;
+//	private boolean activeRadar = true;
+	private double distanceToTarget = 0;
+	private double bearingToTarget = 0;
+	private double moveDirection = 1;
 	
 	public void run() {
 		// Initialization of the robot should be put here
@@ -27,17 +30,51 @@ public class TheSaboteur extends AdvancedRobot
 		 //setColors(Color.red,Color.blue,Color.green); // body,gun,radar
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
-		boolean way = true;
+
 		// Robot main loop
+		int counter = 0;
 		while(true) {
-			
-			out.printf("\nremaining: %f",getRadarTurnRemaining());
-			if (activeRadar && getRadarTurnRemaining() == 0) {
+			if (this.getVelocity() == 0) {
+				moveDirection = moveDirection * -1;
+			}
+//			out.printf("\n DistanceToTarget: %f",distanceToTarget);
+//			out.printf("\n BearingToTarget: %f",bearingToTarget);
+			if (getRadarTurnRemaining() == 0) {
+//				go back to a 360 scan for more targets
 				setTurnRadarRight(Double.POSITIVE_INFINITY);
 			}
-			
-			setTurnRight(50);
-			setAhead(20);
+			counter ++;
+//			setTurnRight(50);
+			if (distanceToTarget > 200) // kamakazeeeee
+			{
+				double missBy = 0;
+				if (counter < 20) {
+					//go left
+					missBy = -40;
+				}
+				else if (counter < 40){
+					//go right
+					missBy = 40;
+				}
+				else {
+					counter =0;
+				}
+				out.printf("\n output: %f",bearingToTarget+missBy);
+				
+				setTurnRight(bearingToTarget+missBy);
+				setAhead(20);
+			}
+			else if (distanceToTarget < 200 && distanceToTarget > 120){
+				setTurnRight(bearingToTarget+90);
+				setAhead(50*moveDirection);
+			}
+			else {
+				setTurnRight(bearingToTarget);
+				setBack(50*moveDirection);
+			}
+			scan();
+//			setTurnRight(bearingToTarget);
+//			setAhead(2);
 			execute();
 		}
 	}
@@ -59,15 +96,15 @@ public class TheSaboteur extends AdvancedRobot
 		setTurnRadarRight(cc);
 		
 		double gunBearing = this.getGunHeading();
-		
-//		this.setTurnGunRight(Utils.normalRelativeAngleDegrees(gunBearing+radarHeading));
-		double relational_difference = (e.getDistance() / 100);
-		double distance_offset = cc * relational_difference;
-		this.setTurnGunRight(radarHeading-gunBearing+distance_offset);
-		out.printf("\nlock: %f",distance_offset);
+		distanceToTarget = e.getDistance();
+		bearingToTarget = e.getBearing();
+//		
+		double relational_difference = (distanceToTarget / 15);
+		double distance_offset = cc ;//* relational_difference;
+		this.setTurnGunRight(Utils.normalRelativeAngleDegrees(heading + bearing-gunBearing+distance_offset));
 //		if (Math.abs(distance_offset) < 3)
 		{ 
-			this.setFire(1);
+			this.setFire(3);
 		}
 		return;
 		// Replace the next line with any behavior you would like
@@ -124,6 +161,10 @@ public class TheSaboteur extends AdvancedRobot
 	 */
 	public void onHitWall(HitWallEvent e) {
 		// Replace the next line with any behavior you would like
-		//back(20);
+		//turnRight(120);
+//		double a = Utils.normalRelativeAngleDegrees(e.getBearing());
+//		turnLeft(a);
+//		setAhead(200);
+//		execute();
 	}	
 }

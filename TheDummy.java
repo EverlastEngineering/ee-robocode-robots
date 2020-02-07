@@ -21,12 +21,13 @@ public class TheDummy extends AdvancedRobot
 		// and the next line:
 
 		 setColors(Color.red,Color.blue,Color.green); // body,gun,radar
-		 
+		 double aa = this.getHeading(); 
+		 setTurnLeft(90-aa);
 		// Robot main loop
 		while(true) {
-			setTurnRight(50);
-			setAhead(20);
-			execute();
+			turnRight(180); 
+			ahead(1000);
+//			execute();
 		}
 	}
 
@@ -66,7 +67,7 @@ public class TheDummy extends AdvancedRobot
 	 */
 	public void onHitByBullet(HitByBulletEvent e) {
 		// Replace the next line with any behavior you would like
-		back(10);
+//		back(10);
 	}
 	
 	/**
@@ -74,6 +75,6 @@ public class TheDummy extends AdvancedRobot
 	 */
 	public void onHitWall(HitWallEvent e) {
 		// Replace the next line with any behavior you would like
-		back(20);
+//		back(20);
 	}	
 }
