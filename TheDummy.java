@@ -27,7 +27,8 @@ public class TheDummy extends AdvancedRobot
 		while(true) {
 			turnRight(180); 
 			ahead(1000);
-//			execute();
+			execute();
+			scan();
 		}
 	}
 

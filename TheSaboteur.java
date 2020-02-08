@@ -2,6 +2,8 @@ package ee;
 import robocode.*;
 import robocode.util.Utils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import java.awt.Color;
 
@@ -20,6 +22,7 @@ public class TheSaboteur extends AdvancedRobot
 	private double distanceToTarget = 0;
 	private double bearingToTarget = 0;
 	private double moveDirection = 1;
+	private AveragedArray bearingDelta;
 	
 	public void run() {
 		// Initialization of the robot should be put here
@@ -31,12 +34,18 @@ public class TheSaboteur extends AdvancedRobot
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
 
+		// face direction for testing
+//		this.setTurnLeft(this.getHeading()+90);
+		
+		bearingDelta = new AveragedArray(5);
+
 		// Robot main loop
 		int counter = 0;
 		while(true) {
 			if (this.getVelocity() == 0) {
 				moveDirection = moveDirection * -1;
 			}
+			
 //			out.printf("\n DistanceToTarget: %f",distanceToTarget);
 //			out.printf("\n BearingToTarget: %f",bearingToTarget);
 			if (getRadarTurnRemaining() == 0) {
@@ -44,22 +53,22 @@ public class TheSaboteur extends AdvancedRobot
 				setTurnRadarRight(Double.POSITIVE_INFINITY);
 			}
 			counter ++;
-//			setTurnRight(50);
-			if (distanceToTarget > 200) // kamakazeeeee
+			
+			if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
 			{
-				double missBy = 0;
-				if (counter < 20) {
-					//go left
+				double missBy = 0; // setup for a weave pattern
+				if (counter < 20) { 
+					//weave left
 					missBy = -40;
 				}
 				else if (counter < 40){
-					//go right
+					//weave right
 					missBy = 40;
 				}
 				else {
-					counter =0;
+					counter = 0;
 				}
-				out.printf("\n output: %f",bearingToTarget+missBy);
+				
 				
 				setTurnRight(bearingToTarget+missBy);
 				setAhead(20);
@@ -73,8 +82,8 @@ public class TheSaboteur extends AdvancedRobot
 				setBack(50*moveDirection);
 			}
 			scan();
-//			setTurnRight(bearingToTarget);
-//			setAhead(2);
+//			setTurnRight(0);
+//			setAhead(0);
 			execute();
 		}
 	}
@@ -86,66 +95,57 @@ public class TheSaboteur extends AdvancedRobot
 	/**
 	 * onScannedRobot: What to do when you see another robot
 	 */
+	private double previous = 0;
+	private double previousBearingToTarget = 0;
+	private double previousDistance = 0;
+	
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
+		distanceToTarget = e.getDistance();
+		bearingToTarget = e.getBearing();
+		
 		double heading = getHeading();
 		double bearing = e.getBearing();
 		double radarHeading = getRadarHeading();
-		double aa = heading + bearing - radarHeading;
-		double cc = 1.95 * Utils.normalRelativeAngleDegrees(aa);
-		setTurnRadarRight(cc);
 		
+		double velocityToTarget = distanceToTarget - previousDistance;
+		double bearingDeltaToTarget = (heading+bearing)-previousBearingToTarget;
+		double bulletSpeed = Rules.getBulletSpeed(3);
+		double mySpeed = this.getVelocity();
+		
+		double aa = heading + bearing - radarHeading;
+		double cc = 1.5 * Utils.normalRelativeAngleDegrees(aa);
+		setTurnRadarRight(cc);
+		 
 		double gunBearing = this.getGunHeading();
-		distanceToTarget = e.getDistance();
-		bearingToTarget = e.getBearing();
-//		
-		double relational_difference = (distanceToTarget / 15);
-		double distance_offset = cc ;//* relational_difference;
-		this.setTurnGunRight(Utils.normalRelativeAngleDegrees(heading + bearing-gunBearing+distance_offset));
-//		if (Math.abs(distance_offset) < 3)
+
+		double relational_difference = distanceToTarget / 60;
+		
+//		out.printf("\n distanceToTarget: %f",relational_difference);
+//		out.printf(" cc: %f",cc);
+		double distance_offset = ((cc+previous)/2) * relational_difference;
+//		out.printf(" distance_offset: %f",distance_offset);
+//		out.printf(" unknown: %f",this.getGunTurnRemaining());
+		double turnGun = Utils.normalRelativeAngleDegrees(bearing-gunBearing+heading);
+
+		
+		//		double delta = bearingDelta.average();
+//		this.setTurnGunRight(Math.abs(turnGun)>5?turnGun:turnGun+(delta*3));
+		this.setTurnGunRight(turnGun);
+		
+		//if we're within 1.5 degrees of the target's bearing, shoot
+		if (Math.abs(turnGun) < 1.5)
 		{ 
-			this.setFire(3);
+			this.setFire(1);
 		}
-		return;
-		// Replace the next line with any behavior you would like
-//		double d = this.getGunHeading();
-//		double f = this.getRadarHeading();
-//		double g = Math.abs(d-f);
-//		double h = this.getGunTurnRemaining();
-//		double i = this.getRadarTurnRemaining();
-//		if (g > 2)
-//		{
-//			this.setTurnRadarLeft(i);
-//			this.setTurnGunLeft(d-f);
-//			this.setTurnRadarRight(d-f);
-////			activeRadar = true;
-//		}
-//		else {
-////			activeRadar = false;
-//			fire(3);
-//		}
-		//this.setTurnRadarLeft(this.getRadarTurnRemaining());
-////		
-//		scan();
-//		return;
-//		double bearing = e.getBearing();
-//		double distance = e.getDistance();
-//		
-//		if (distance > 120) {
-//			// sprint right at the fucker
-//			this.turnRight(bearing);
-//			ahead(distance-80);
-//			turnGunRight(360);
-//			fire(1);
-//		}
-//		if (distance < 120 && distance > 80) {
-//			this.turnRight(90);
-//			turnGunLeft(90);
-//			fire(1);
-//			ahead(30);
-//			turnGunLeft(90);
-//			fire(1);
-//		}
+		
+		
+		
+		out.printf("\n velocity to target: %f", distanceToTarget - previousDistance);
+		out.printf("\n heading+bearing: %f", (heading+bearing)-previousBearingToTarget);
+		previous = cc;
+		previousDistance = distanceToTarget;
+		previousBearingToTarget = (heading+bearing);
 	}
 
 	/**
@@ -167,4 +167,31 @@ public class TheSaboteur extends AdvancedRobot
 //		setAhead(200);
 //		execute();
 	}	
+	
+	public class AveragedArray {
+		private ArrayList<Double> arrayList = new ArrayList<Double>();
+		private int maxSampleSize;
+		public AveragedArray(int _maxSampleSize) {
+			maxSampleSize = _maxSampleSize; 
+		}
+		public void add(double d) {
+			if (arrayList.size() == maxSampleSize) {
+				arrayList.remove(0);
+			}
+			arrayList.add(d);
+		}
+		public double average() {
+			double _average;
+			double _total = 0;
+			for (int i = 0; i<arrayList.size(); i++)
+			{
+				_total += arrayList.get(i);
+			}
+			_average = _total / arrayList.size();
+			return _average;
+		}
+		public int getMaxSampleSize() {
+			return maxSampleSize;
+		}
+	}
 }
