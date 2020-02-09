@@ -119,24 +119,26 @@ public class TheSaboteur extends AdvancedRobot
 		double bulletSpeed = Rules.getBulletSpeed(bulletStrength);
 //		double mySpeed = this.getVelocity();
 		
-//		double bb = ;
-		
-		double ss = (distanceToTarget/bulletSpeed*targetVelocity);
-		
 //		Given two sides a, b and angle C. Find the third side of the triangle using law of cosines.
 //		Input : a = 5, b = 8, C = 49 
 //		Output : 6.04339
 //		c = sqrt(a^2 + b^2 - 2*a*b*cos(C))
 //		calculate the distance the bullet has to travel (side c)
 		double a = distanceToTarget;
-		double b = distanceToTarget/bulletSpeed*targetVelocity;
-		double C = 180 - (360 - absoluteTargetBearing) - targetHeading;
-//		c2=a2+b2−2abcosγ
-		double c = Math.sqrt(Math.pow(a,2) + Math.pow(b,2) - (2*a*b*Math.cos(C*Math.PI/180)));
-		// next find the B angle
-		//cos B = (a2 + c2 − b2)/2ac
-
-		double B = Math.acos((Math.pow(a, 2) + Math.pow(c,2) - Math.pow(b,2))/(2*a*c))*180/Math.PI;  
+		double bestGuess = distanceToTarget;
+		double B = 0;
+		for (int i=0;i<5;i++) {
+			double b = bestGuess/bulletSpeed*targetVelocity;
+			double C = 180 - (360 - absoluteTargetBearing) - targetHeading;
+	//		c2=a2+b2−2abcosγ
+			double c = Math.sqrt(Math.pow(a,2) + Math.pow(b,2) - (2*a*b*Math.cos(C*Math.PI/180)));
+			// next find the B angle
+			//cos B = (a2 + c2 − b2)/2ac
+	
+			B = Math.acos((Math.pow(a, 2) + Math.pow(c,2) - Math.pow(b,2))/(2*a*c))*180/Math.PI;  
+			bestGuess = c;
+		}
+		
 		//calculate target position
 //		double absoluteBearing = heading+bearingToTarget-90;
 //		if (absoluteBearing < 0) absoluteBearing += 360; // convert to 0 degrees east
