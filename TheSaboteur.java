@@ -54,33 +54,33 @@ public class TheSaboteur extends AdvancedRobot
 			}
 			counter ++;
 			
-			if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
-			{
-				double missBy = 0; // setup for a weave pattern
-				if (counter < 20) { 
-					//weave left
-					missBy = -40;
-				}
-				else if (counter < 40){
-					//weave right
-					missBy = 40;
-				}
-				else {
-					counter = 0;
-				}
-				
-				
-				setTurnRight(bearingToTarget+missBy);
-				setAhead(20);
-			}
-			else if (distanceToTarget < 200 && distanceToTarget > 120){
-				setTurnRight(bearingToTarget+90);
-				setAhead(50*moveDirection);
-			}
-			else {
-				setTurnRight(bearingToTarget);
-				setBack(50*moveDirection);
-			}
+//			if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
+//			{
+//				double missBy = 0; // setup for a weave pattern
+//				if (counter < 20) { 
+//					//weave left
+//					missBy = -40;
+//				}
+//				else if (counter < 40){
+//					//weave right
+//					missBy = 40;
+//				}
+//				else {
+//					counter = 0;
+//				}
+//				
+//				
+//				setTurnRight(bearingToTarget+missBy);
+//				setAhead(20);
+//			}
+//			else if (distanceToTarget < 200 && distanceToTarget > 120){
+//				setTurnRight(bearingToTarget+75);
+//				setAhead(50*moveDirection);
+//			}
+//			else {
+//				setTurnRight(bearingToTarget);
+//				setBack(50*moveDirection);
+//			}
 			scan();
 //			setTurnRight(0);
 //			setAhead(0);
@@ -98,35 +98,68 @@ public class TheSaboteur extends AdvancedRobot
 	private double previous = 0;
 	private double previousBearingToTarget = 0;
 	private double previousDistance = 0;
-	
+	private String target = "";
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
-		distanceToTarget = e.getDistance();
-		bearingToTarget = e.getBearing();
-		
-		double heading = getHeading();
-		double bearing = e.getBearing();
-		double radarHeading = getRadarHeading();
-		
-		double velocityToTarget = distanceToTarget - previousDistance;
-		double bearingDeltaToTarget = (heading+bearing)-previousBearingToTarget;
-		double bulletSpeed = Rules.getBulletSpeed(3);
-		double mySpeed = this.getVelocity();
-		
-		double aa = heading + bearing - radarHeading;
-		double cc = 1.5 * Utils.normalRelativeAngleDegrees(aa);
-		setTurnRadarRight(cc);
-		 
-		double gunBearing = this.getGunHeading();
+		final double bulletStrength = 1;
 
-		double relational_difference = distanceToTarget / 60;
+		double gunBearing = getGunHeading();
+		double heading = getHeading();
+		double radarHeading = getRadarHeading();
+				
+		double distanceToTarget = e.getDistance(); //relative to my robot //d
+		double bearingToTarget = e.getBearing(); //relative to my robots head
+		double absoluteTargetBearing = heading+bearingToTarget; //a
+		double targetVelocity = e.getVelocity(); //max 8 //s
+		double targetHeading = e.getHeading(); //north 0 //b
+
+		
+//		double velocityToTarget = distanceToTarget - previousDistance;
+//		double bearingDeltaToTarget = (heading+bearingToTarget)-previousBearingToTarget;
+		double bulletSpeed = Rules.getBulletSpeed(bulletStrength);
+//		double mySpeed = this.getVelocity();
+		
+//		double bb = ;
+		
+		double ss = (distanceToTarget/bulletSpeed*targetVelocity);
+		
+//		Given two sides a, b and angle C. Find the third side of the triangle using law of cosines.
+//		Input : a = 5, b = 8, C = 49 
+//		Output : 6.04339
+//		c = sqrt(a^2 + b^2 - 2*a*b*cos(C))
+//		calculate the distance the bullet has to travel (side c)
+		double a = distanceToTarget;
+		double b = distanceToTarget/bulletSpeed*targetVelocity;
+		double C = 180 - (360 - absoluteTargetBearing) - targetHeading;
+//		c2=a2+b2−2abcosγ
+		double c = Math.sqrt(Math.pow(a,2) + Math.pow(b,2) - (2*a*b*Math.cos(C*Math.PI/180)));
+		// next find the B angle
+		//cos B = (a2 + c2 − b2)/2ac
+
+		double B = Math.acos((Math.pow(a, 2) + Math.pow(c,2) - Math.pow(b,2))/(2*a*c))*180/Math.PI;  
+		//calculate target position
+//		double absoluteBearing = heading+bearingToTarget-90;
+//		if (absoluteBearing < 0) absoluteBearing += 360; // convert to 0 degrees east
+//		double absoluteBearingRadians = (absoluteBearing)*Math.PI/180;
+//		double myX = getX();
+//		double myY = this.getBattleFieldHeight()-getY(); // getY returns 0,0 as the BOTTOM LEFT FFS LOL
+//		double xx = myX + distanceToTarget * Math.cos(absoluteBearingRadians);
+//		double yy = myY + distanceToTarget * Math.sin(absoluteBearingRadians);
+		
+//		out.printf("\n target position: %f %f", xx, yy);
+		
+		double radarResetTo = 1.5 * Utils.normalRelativeAngleDegrees(heading + bearingToTarget - radarHeading);
+		setTurnRadarRight(radarResetTo);
+		 
+
+		double relational_difference = distanceToTarget / 60; 
 		
 //		out.printf("\n distanceToTarget: %f",relational_difference);
 //		out.printf(" cc: %f",cc);
-		double distance_offset = ((cc+previous)/2) * relational_difference;
+//		double distance_offset = ((cc+previous)/2) * relational_difference;
 //		out.printf(" distance_offset: %f",distance_offset);
 //		out.printf(" unknown: %f",this.getGunTurnRemaining());
-		double turnGun = Utils.normalRelativeAngleDegrees(bearing-gunBearing+heading);
+		double turnGun = Utils.normalRelativeAngleDegrees(bearingToTarget-gunBearing+heading+B);
 
 		
 		//		double delta = bearingDelta.average();
@@ -134,18 +167,17 @@ public class TheSaboteur extends AdvancedRobot
 		this.setTurnGunRight(turnGun);
 		
 		//if we're within 1.5 degrees of the target's bearing, shoot
-		if (Math.abs(turnGun) < 1.5)
+//		if (Math.abs(turnGun) < 1.5)
 		{ 
-			this.setFire(1);
+			this.setFire(bulletStrength);
 		}
 		
 		
 		
-		out.printf("\n velocity to target: %f", distanceToTarget - previousDistance);
-		out.printf("\n heading+bearing: %f", (heading+bearing)-previousBearingToTarget);
-		previous = cc;
+//		previous = cc;
 		previousDistance = distanceToTarget;
-		previousBearingToTarget = (heading+bearing);
+		previousBearingToTarget = (heading+bearingToTarget);
+		target = e.getName();
 	}
 
 	/**
