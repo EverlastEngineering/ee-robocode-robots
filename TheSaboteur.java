@@ -3,7 +3,6 @@ import robocode.*;
 import robocode.util.Utils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 import java.awt.Color;
 
@@ -14,20 +13,30 @@ import java.awt.Color;
  */
 public class TheSaboteur extends AdvancedRobot
 {
-	final private int weaveWidth = 40;
-	final private double bulletStrength = 0.1;
-	final private boolean shouldMove = false;
-	
-	// private 
+
 	/**
 	 * run: EverlastEngineering: TheSaboteur
 	 */
-//	private boolean activeRadar = true;
+	
+	final private int weaveWidth = 40;
+	final private double bulletStrength = 3;
+	final private boolean shouldMove = true;
+	
 	private double distanceToTarget = 0;
 	private double bearingToTarget = 0;
 	private double moveDirection = 1;
 	private boolean activeRadar = false;
 	private boolean firstScan = true;
+	private double previous = 0;
+	private double previousBearingToTarget = 0;
+	private double previousDistance = 0;
+	private String target = "";
+	private double closestTargetDistance = 100000;
+	private String closestTarget = "";
+	private int numberOfTanks = 0;
+	private String tankToTarget = "";
+	private boolean tickSinceLastScan = false;
+
 	
 	public void run() {
 		// Initialization of the robot should be put here
@@ -43,16 +52,16 @@ public class TheSaboteur extends AdvancedRobot
 //		this.setTurnLeft(this.getHeading()+90);
 		
 		// Robot main loop
-		int counter = 0;
+		int weaveCounter = 0;
 		setTurnRadarRight(10360);
 		execute();
-		
+
 		while(true) {
+			tickSinceLastScan = true;
 			if (this.getVelocity() == 0) {
 				moveDirection = moveDirection * -1;
-//				out.printf("Direction: %f\n", moveDirection);
 			}
-			
+
 			if (firstScan) {
 				if (this.getRadarTurnRemaining() < 10000) {
 					out.printf("Enemies: %d\n", numberOfTanks);
@@ -61,10 +70,6 @@ public class TheSaboteur extends AdvancedRobot
 				}
 			}
 			
-//			out.printf("\n DistanceToTarget: %f",distanceToTarget);
-//			out.printf("\n BearingToTarget: %f",bearingToTarget);
-			
-			counter ++;
 			if (getRadarTurnRemaining() == 0 && !activeRadar) {
 //				go back to a 360 scan for more targets
 				setTurnRadarRight(10360);
@@ -76,25 +81,26 @@ public class TheSaboteur extends AdvancedRobot
 			}
 			
 			//TODO: Search pattern if no targets are found
+			
 			if (shouldMove) {
+				weaveCounter ++;
 				if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
 				{
 					double missBy = 0; // setup for a weave pattern
-					if (counter < weaveWidth/2) { 
+					if (weaveCounter < weaveWidth/2) { 
 						//weave left
 						missBy = -weaveWidth;
 					}
-					else if (counter < weaveWidth){
+					else if (weaveCounter < weaveWidth){
 						//weave right
 						missBy = weaveWidth;
 					}
 					else {
-						counter = 0;
+						weaveCounter = 0;
+						missBy = weaveWidth;
 					}
-					
-					
 					setTurnRight(bearingToTarget+missBy);
-					setAhead(20);
+					setAhead(50);
 				}
 				else if (distanceToTarget < 200 && distanceToTarget > 120){
 					setTurnRight(bearingToTarget+90);
@@ -102,7 +108,7 @@ public class TheSaboteur extends AdvancedRobot
 				}
 				else {
 					setTurnRight(bearingToTarget);
-					setBack(50*moveDirection);
+					setBack(50*Math.abs(moveDirection));
 				}
 			}
 //			scan();
@@ -112,33 +118,26 @@ public class TheSaboteur extends AdvancedRobot
 		}
 	}
 
-	public void target() {
-
-	}
-
 	/**
 	 * onScannedRobot: What to do when you see another robot
 	 */
-	private double previous = 0;
-	private double previousBearingToTarget = 0;
-	private double previousDistance = 0;
-	private String target = "";
-	private double closestTargetDistance = 100000;
-	private String closestTarget = "";
-	private int numberOfTanks = 0;
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
+		if (target != e.getName()) {
+			//out.printf("Scanned: %s\n", e.getName());
+		}
+		target = e.getName();
 		if (firstScan) {
-			out.printf("Enemy: %s\n",e.getName());
+			out.printf("Enemy: %s Distance: %f\n",target, e.getDistance());
 			if (e.getDistance() < closestTargetDistance)
 			{
-				tankToTarget = e.getName();
+				tankToTarget = target;
 				closestTargetDistance = e.getDistance();
 			}
 			numberOfTanks++;
 			return;
 		}
-		if (tankToTarget != "" && e.getName() != tankToTarget) {
+		if (tankToTarget != "" && target != tankToTarget) {
 			out.printf("Re-acquiring for target: %s\n", tankToTarget);
 			if (!activeRadar) {
 				setTurnRadarRight(10360);
@@ -151,6 +150,9 @@ public class TheSaboteur extends AdvancedRobot
 			}
 		}
 		activeRadar = false;
+		if (!tickSinceLastScan) {
+			return;
+		}
 		tankToTarget = "";
 		double gunBearing = getGunHeading();
 		double heading = getHeading();
@@ -228,33 +230,42 @@ public class TheSaboteur extends AdvancedRobot
 //		this.setTurnGunRight(Math.abs(turnGun)>5?turnGun:turnGun+(delta*3));
 		this.setTurnGunRight(turnGun);
 		
-		//if we're within 1.5 degrees of the target's bearing, shoot
-		if (Math.abs(turnGun) < 4 || distanceToTarget < 100)
+		//if we're within x degrees of the target's bearing or really close, shoot
+		if (Math.abs(turnGun) < 5 || (distanceToTarget < 100 && Math.abs(turnGun) < 40))
 		{ 
 			this.setFire(bulletStrength);
 		}
-		else 
-		{
-			out.printf("turnGun: %f\n", turnGun);
-		}
+//		else 
+//		{
+//			out.printf("turnGun: %f\n", turnGun);
+//		}
 		
 		
 		
 //		previous = cc;
 		previousDistance = distanceToTarget;
 		previousBearingToTarget = (heading+bearingToTarget);
-		target = e.getName();
+		tickSinceLastScan = false;
 	}
 
 	/**
 	 * onHitByBullet: What to do when you're hit by a bullet
 	 */
-	private String tankToTarget = "";
 	public void onHitByBullet(HitByBulletEvent e) {
 		// Replace the next line with any behavior you would like
 //		back(10);
 		tankToTarget = e.getName();
 		out.printf("Hit by: %s\n", tankToTarget);
+//		double turnGun = Utils.normalRelativeAngleDegrees(e.getBearing()-this.getGunHeading()+this.getHeading());
+//		this.setTurnGunRight(turnGun);
+	}
+	
+	public void onHitRobot(HitRobotEvent e) 
+	{
+		tankToTarget = e.getName();
+		out.printf("Hit by: %s\n", tankToTarget);
+//		double turnGun = Utils.normalRelativeAngleDegrees(e.getBearing()-this.getGunHeading()+this.getHeading());
+//		this.setTurnGunRight(turnGun);
 	}
 	
 	/**
