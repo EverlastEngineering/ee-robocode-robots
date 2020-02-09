@@ -23,6 +23,8 @@ public class TheSaboteur extends AdvancedRobot
 	private double bearingToTarget = 0;
 	private double moveDirection = 1;
 	private AveragedArray bearingDelta;
+	private boolean activeRadar = false;
+	private boolean firstScan = true;
 	
 	public void run() {
 		// Initialization of the robot should be put here
@@ -41,18 +43,32 @@ public class TheSaboteur extends AdvancedRobot
 
 		// Robot main loop
 		int counter = 0;
+		
 		while(true) {
+			
+			if (firstScan && this.getRadarTurnRemaining() > 10000) {
+				if (e.getDistance() < closestTargetDistance)
+				{
+					tankToTarget = e.getName();
+					closestTargetDistance = e.getDistance();
+				}
+				numberOfTanks++;
+				return;
+			}
+			
 			if (this.getVelocity() == 0) {
 				moveDirection = moveDirection * -1;
+				out.printf("Direction: %f\n", moveDirection);
 			}
 			
 //			out.printf("\n DistanceToTarget: %f",distanceToTarget);
 //			out.printf("\n BearingToTarget: %f",bearingToTarget);
-			if (getRadarTurnRemaining() == 0) {
-//				go back to a 360 scan for more targets
-				setTurnRadarRight(Double.POSITIVE_INFINITY);
-			}
+			
 			counter ++;
+			if (getRadarTurnRemaining() == 0 && !activeRadar && !firstScan) {
+//				go back to a 360 scan for more targets
+				setTurnRadarRight(10360);
+			}
 			
 			if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
 			{
@@ -99,10 +115,32 @@ public class TheSaboteur extends AdvancedRobot
 	private double previousBearingToTarget = 0;
 	private double previousDistance = 0;
 	private String target = "";
+	private double bulletStrength = 3;
+	private double closestTargetDistance = 100000;
+	private String closestTarget = "";
+	private int numberOfTanks = 0;
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
-		final double bulletStrength = 0.1;
-
+		if (firstScan) {
+			return;
+		}
+		if (tankToTarget != "") {
+			out.printf("Re-acquiring for target: %s\n", tankToTarget);
+			if (e.getName() != tankToTarget) {
+				if (!activeRadar) {
+					setTurnRadarRight(10360);
+					activeRadar = true;
+				}
+				if (this.getRadarTurnRemaining() > 10000) {
+					scan();
+					return;
+				}
+				else {
+					activeRadar = false;
+				}
+			}
+		}
+		tankToTarget = "";
 		double gunBearing = getGunHeading();
 		double heading = getHeading();
 		double radarHeading = getRadarHeading();
@@ -140,6 +178,8 @@ public class TheSaboteur extends AdvancedRobot
 			if (C < 180) B = B * -1;
 			bestGuess = c;
 		}
+		
+		//TODO: determine if calculated trajectory would be outside the bounds of the playing field 
 		
 		//calculate target position
 //		double absoluteBearing = heading+bearingToTarget-90;
@@ -187,9 +227,12 @@ public class TheSaboteur extends AdvancedRobot
 	/**
 	 * onHitByBullet: What to do when you're hit by a bullet
 	 */
+	private String tankToTarget = "";
 	public void onHitByBullet(HitByBulletEvent e) {
 		// Replace the next line with any behavior you would like
 //		back(10);
+		tankToTarget = e.getName();
+		out.printf("Hit by: %s\n", tankToTarget);
 	}
 	
 	/**
