@@ -99,8 +99,8 @@ public class TheSaboteur extends AdvancedRobot
 		distanceToTarget = e.getDistance();
 		bearingToTarget = e.getBearing();
 //		
-		double relational_difference = (distanceToTarget / 15);
-		double distance_offset = cc ;//* relational_difference;
+		double relational_difference = (distanceToTarget / 45);
+		double distance_offset = cc * relational_difference;
 		this.setTurnGunRight(Utils.normalRelativeAngleDegrees(heading + bearing-gunBearing+distance_offset));
 //		if (Math.abs(distance_offset) < 3)
 		{ 
