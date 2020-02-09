@@ -15,6 +15,9 @@ import java.awt.Color;
 public class TheSaboteur extends AdvancedRobot
 {
 	final private int weaveWidth = 40;
+	final private double bulletStrength = 0.1;
+	final private boolean shouldMove = false;
+	
 	// private 
 	/**
 	 * run: EverlastEngineering: TheSaboteur
@@ -23,7 +26,6 @@ public class TheSaboteur extends AdvancedRobot
 	private double distanceToTarget = 0;
 	private double bearingToTarget = 0;
 	private double moveDirection = 1;
-	private AveragedArray bearingDelta;
 	private boolean activeRadar = false;
 	private boolean firstScan = true;
 	
@@ -33,15 +35,13 @@ public class TheSaboteur extends AdvancedRobot
 		// After trying out your robot, try uncommenting the import at the top,
 		// and the next line:
 
-		 setColors(Color.black,Color.black,Color.white); // body,gun,radar
+		setColors(Color.black,Color.red,Color.black); // body,gun,radar
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
 
 		// face direction for testing
 //		this.setTurnLeft(this.getHeading()+90);
 		
-		bearingDelta = new AveragedArray(5);
-
 		// Robot main loop
 		int counter = 0;
 		setTurnRadarRight(10360);
@@ -76,33 +76,34 @@ public class TheSaboteur extends AdvancedRobot
 			}
 			
 			//TODO: Search pattern if no targets are found
-			
-			if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
-			{
-				double missBy = 0; // setup for a weave pattern
-				if (counter < weaveWidth/2) { 
-					//weave left
-					missBy = -weaveWidth;
+			if (shouldMove) {
+				if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
+				{
+					double missBy = 0; // setup for a weave pattern
+					if (counter < weaveWidth/2) { 
+						//weave left
+						missBy = -weaveWidth;
+					}
+					else if (counter < weaveWidth){
+						//weave right
+						missBy = weaveWidth;
+					}
+					else {
+						counter = 0;
+					}
+					
+					
+					setTurnRight(bearingToTarget+missBy);
+					setAhead(20);
 				}
-				else if (counter < weaveWidth){
-					//weave right
-					missBy = weaveWidth;
+				else if (distanceToTarget < 200 && distanceToTarget > 120){
+					setTurnRight(bearingToTarget+90);
+					setAhead(50*moveDirection);
 				}
 				else {
-					counter = 0;
+					setTurnRight(bearingToTarget);
+					setBack(50*moveDirection);
 				}
-				
-				
-				setTurnRight(bearingToTarget+missBy);
-				setAhead(20);
-			}
-			else if (distanceToTarget < 200 && distanceToTarget > 120){
-				setTurnRight(bearingToTarget+90);
-				setAhead(50*moveDirection);
-			}
-			else {
-				setTurnRight(bearingToTarget);
-				setBack(50*moveDirection);
 			}
 //			scan();
 //			setTurnRight(0);
@@ -122,7 +123,6 @@ public class TheSaboteur extends AdvancedRobot
 	private double previousBearingToTarget = 0;
 	private double previousDistance = 0;
 	private String target = "";
-	private double bulletStrength = 3;
 	private double closestTargetDistance = 100000;
 	private String closestTarget = "";
 	private int numberOfTanks = 0;
@@ -179,14 +179,14 @@ public class TheSaboteur extends AdvancedRobot
 		for (int i=0;i<5;i++) {
 			double b = bestGuess/bulletSpeed*targetVelocity;
 			double C = Math.abs(180 - (360 - absoluteTargetBearing) - targetHeading);
-//			if (C > 180) C -= 180;
+			if (C > 180) C -= 180;
 	//		c2=a2+b2−2abcosγ
 			double c = Math.sqrt(Math.pow(a,2) + Math.pow(b,2) - (2*a*b*Math.cos(C*Math.PI/180)));
 			// next find the B angle
 			//cos B = (a2 + c2 − b2)/2ac
 	
 			B = Math.acos((Math.pow(a, 2) + Math.pow(c,2) - Math.pow(b,2))/(2*a*c))*180/Math.PI;
-			if (C < 180) B = B * -1;
+			if (C > 180) B = B * -1;
 			bestGuess = c;
 		}
 		
@@ -222,9 +222,13 @@ public class TheSaboteur extends AdvancedRobot
 		this.setTurnGunRight(turnGun);
 		
 		//if we're within 1.5 degrees of the target's bearing, shoot
-//		if (Math.abs(turnGun) < 1.5)
+		if (Math.abs(turnGun) < 3)
 		{ 
 			this.setFire(bulletStrength);
+		}
+		else 
+		{
+			out.printf("turnGun: %f\n", turnGun);
 		}
 		
 		
