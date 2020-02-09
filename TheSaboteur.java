@@ -14,6 +14,7 @@ import java.awt.Color;
  */
 public class TheSaboteur extends AdvancedRobot
 {
+	final private int weaveWidth = 40;
 	// private 
 	/**
 	 * run: EverlastEngineering: TheSaboteur
@@ -43,43 +44,49 @@ public class TheSaboteur extends AdvancedRobot
 
 		// Robot main loop
 		int counter = 0;
+		setTurnRadarRight(10360);
+		execute();
 		
 		while(true) {
-			
-			if (firstScan && this.getRadarTurnRemaining() > 10000) {
-				if (e.getDistance() < closestTargetDistance)
-				{
-					tankToTarget = e.getName();
-					closestTargetDistance = e.getDistance();
-				}
-				numberOfTanks++;
-				return;
-			}
-			
 			if (this.getVelocity() == 0) {
 				moveDirection = moveDirection * -1;
-				out.printf("Direction: %f\n", moveDirection);
+//				out.printf("Direction: %f\n", moveDirection);
+			}
+			
+			if (firstScan) {
+				if (this.getRadarTurnRemaining() < 10000) {
+					out.printf("Enemies: %d\n", numberOfTanks);
+					out.printf("First target: %s\n", tankToTarget);
+					firstScan = false;
+				}
 			}
 			
 //			out.printf("\n DistanceToTarget: %f",distanceToTarget);
 //			out.printf("\n BearingToTarget: %f",bearingToTarget);
 			
 			counter ++;
-			if (getRadarTurnRemaining() == 0 && !activeRadar && !firstScan) {
+			if (getRadarTurnRemaining() == 0 && !activeRadar) {
 //				go back to a 360 scan for more targets
 				setTurnRadarRight(10360);
 			}
 			
+			if (getRadarTurnRemaining() > 100) {
+				distanceToTarget = 10000;
+				bearingToTarget = 0;
+			}
+			
+			//TODO: Search pattern if no targets are found
+			
 			if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
 			{
 				double missBy = 0; // setup for a weave pattern
-				if (counter < 20) { 
+				if (counter < weaveWidth/2) { 
 					//weave left
-					missBy = -40;
+					missBy = -weaveWidth;
 				}
-				else if (counter < 40){
+				else if (counter < weaveWidth){
 					//weave right
-					missBy = 40;
+					missBy = weaveWidth;
 				}
 				else {
 					counter = 0;
@@ -122,24 +129,28 @@ public class TheSaboteur extends AdvancedRobot
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
 		if (firstScan) {
+			out.printf("Enemy: %s\n",e.getName());
+			if (e.getDistance() < closestTargetDistance)
+			{
+				tankToTarget = e.getName();
+				closestTargetDistance = e.getDistance();
+			}
+			numberOfTanks++;
 			return;
 		}
-		if (tankToTarget != "") {
+		if (tankToTarget != "" && e.getName() != tankToTarget) {
 			out.printf("Re-acquiring for target: %s\n", tankToTarget);
-			if (e.getName() != tankToTarget) {
-				if (!activeRadar) {
-					setTurnRadarRight(10360);
-					activeRadar = true;
-				}
-				if (this.getRadarTurnRemaining() > 10000) {
-					scan();
-					return;
-				}
-				else {
-					activeRadar = false;
-				}
+			if (!activeRadar) {
+				setTurnRadarRight(10360);
+				activeRadar = true;
+				return;
+			}
+			if (this.getRadarTurnRemaining() > 10000) {
+				scan();
+				return;
 			}
 		}
+		activeRadar = false;
 		tankToTarget = "";
 		double gunBearing = getGunHeading();
 		double heading = getHeading();
