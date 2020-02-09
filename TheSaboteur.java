@@ -176,17 +176,24 @@ public class TheSaboteur extends AdvancedRobot
 		double a = distanceToTarget;
 		double bestGuess = distanceToTarget;
 		double B = 0;
+		boolean reversed = false;
 		for (int i=0;i<5;i++) {
 			double b = bestGuess/bulletSpeed*targetVelocity;
-			double C = Math.abs(180 - (360 - absoluteTargetBearing) - targetHeading);
-			if (C > 180) C -= 180;
+			double C = 180 - (360 - absoluteTargetBearing) - targetHeading;
+//			if (C > 180) {
+//				C -= 180;
+//			}
+//			else if (C < -180) {
+//				C += 180;
+//			}
+			C = Utils.normalRelativeAngleDegrees(C);
 	//		c2=a2+b2−2abcosγ
 			double c = Math.sqrt(Math.pow(a,2) + Math.pow(b,2) - (2*a*b*Math.cos(C*Math.PI/180)));
 			// next find the B angle
 			//cos B = (a2 + c2 − b2)/2ac
 	
 			B = Math.acos((Math.pow(a, 2) + Math.pow(c,2) - Math.pow(b,2))/(2*a*c))*180/Math.PI;
-			if (C > 180) B = B * -1;
+			if (C < 0) B = B * -1;
 			bestGuess = c;
 		}
 		
@@ -222,7 +229,7 @@ public class TheSaboteur extends AdvancedRobot
 		this.setTurnGunRight(turnGun);
 		
 		//if we're within 1.5 degrees of the target's bearing, shoot
-		if (Math.abs(turnGun) < 3)
+		if (Math.abs(turnGun) < 4 || distanceToTarget < 100)
 		{ 
 			this.setFire(bulletStrength);
 		}
