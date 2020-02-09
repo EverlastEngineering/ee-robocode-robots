@@ -30,7 +30,7 @@ public class TheSaboteur extends AdvancedRobot
 		// After trying out your robot, try uncommenting the import at the top,
 		// and the next line:
 
-		 //setColors(Color.red,Color.blue,Color.green); // body,gun,radar
+		 setColors(Color.black,Color.black,Color.white); // body,gun,radar
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
 
@@ -54,34 +54,34 @@ public class TheSaboteur extends AdvancedRobot
 			}
 			counter ++;
 			
-//			if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
-//			{
-//				double missBy = 0; // setup for a weave pattern
-//				if (counter < 20) { 
-//					//weave left
-//					missBy = -40;
-//				}
-//				else if (counter < 40){
-//					//weave right
-//					missBy = 40;
-//				}
-//				else {
-//					counter = 0;
-//				}
-//				
-//				
-//				setTurnRight(bearingToTarget+missBy);
-//				setAhead(20);
-//			}
-//			else if (distanceToTarget < 200 && distanceToTarget > 120){
-//				setTurnRight(bearingToTarget+75);
-//				setAhead(50*moveDirection);
-//			}
-//			else {
-//				setTurnRight(bearingToTarget);
-//				setBack(50*moveDirection);
-//			}
-			scan();
+			if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
+			{
+				double missBy = 0; // setup for a weave pattern
+				if (counter < 20) { 
+					//weave left
+					missBy = -40;
+				}
+				else if (counter < 40){
+					//weave right
+					missBy = 40;
+				}
+				else {
+					counter = 0;
+				}
+				
+				
+				setTurnRight(bearingToTarget+missBy);
+				setAhead(20);
+			}
+			else if (distanceToTarget < 200 && distanceToTarget > 120){
+				setTurnRight(bearingToTarget+90);
+				setAhead(50*moveDirection);
+			}
+			else {
+				setTurnRight(bearingToTarget);
+				setBack(50*moveDirection);
+			}
+//			scan();
 //			setTurnRight(0);
 //			setAhead(0);
 			execute();
@@ -101,14 +101,14 @@ public class TheSaboteur extends AdvancedRobot
 	private String target = "";
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
-		final double bulletStrength = 1;
+		final double bulletStrength = 0.1;
 
 		double gunBearing = getGunHeading();
 		double heading = getHeading();
 		double radarHeading = getRadarHeading();
 				
-		double distanceToTarget = e.getDistance(); //relative to my robot //d
-		double bearingToTarget = e.getBearing(); //relative to my robots head
+		distanceToTarget = e.getDistance(); //relative to my robot //d
+		bearingToTarget = e.getBearing(); //relative to my robots head
 		double absoluteTargetBearing = heading+bearingToTarget; //a
 		double targetVelocity = e.getVelocity(); //max 8 //s
 		double targetHeading = e.getHeading(); //north 0 //b
@@ -129,13 +129,15 @@ public class TheSaboteur extends AdvancedRobot
 		double B = 0;
 		for (int i=0;i<5;i++) {
 			double b = bestGuess/bulletSpeed*targetVelocity;
-			double C = 180 - (360 - absoluteTargetBearing) - targetHeading;
+			double C = Math.abs(180 - (360 - absoluteTargetBearing) - targetHeading);
+//			if (C > 180) C -= 180;
 	//		c2=a2+b2−2abcosγ
 			double c = Math.sqrt(Math.pow(a,2) + Math.pow(b,2) - (2*a*b*Math.cos(C*Math.PI/180)));
 			// next find the B angle
 			//cos B = (a2 + c2 − b2)/2ac
 	
-			B = Math.acos((Math.pow(a, 2) + Math.pow(c,2) - Math.pow(b,2))/(2*a*c))*180/Math.PI;  
+			B = Math.acos((Math.pow(a, 2) + Math.pow(c,2) - Math.pow(b,2))/(2*a*c))*180/Math.PI;
+			if (C < 180) B = B * -1;
 			bestGuess = c;
 		}
 		
@@ -154,7 +156,7 @@ public class TheSaboteur extends AdvancedRobot
 		setTurnRadarRight(radarResetTo);
 		 
 
-		double relational_difference = distanceToTarget / 60; 
+//		double relational_difference = distanceToTarget / 60; 
 		
 //		out.printf("\n distanceToTarget: %f",relational_difference);
 //		out.printf(" cc: %f",cc);
