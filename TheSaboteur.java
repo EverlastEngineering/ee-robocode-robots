@@ -18,9 +18,9 @@ public class TheSaboteur extends AdvancedRobot
 	 * run: EverlastEngineering: TheSaboteur
 	 */
 	
-	final private int weaveWidth = 40;
-	final private double bulletStrength = 0.1;
-	final private boolean shouldMove = false;
+	final private double bulletStrength = 3;
+	final private boolean shouldMove = true;
+	final private boolean shouldFire = true;
 	
 	private double distanceToTarget = 0;
 	private double bearingToTarget = 0;
@@ -80,23 +80,25 @@ public class TheSaboteur extends AdvancedRobot
 			}
 			
 			//TODO: Search pattern if no targets are found
+			//TODO: determine distance to wall, avoid bumping
+			//TODO: determine if getting outta dodge (which will gentle turn while reversing) is going to turn into a wall. if so, go the other way to avoid entrapment
 			
 			if (shouldMove) {
 				weaveCounter ++;
 				if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
 				{
 					double missBy = 0; // setup for a weave pattern
-					if (weaveCounter < weaveWidth/2) { 
+					if (weaveCounter < 20) { 
 						//weave left
-						missBy = -weaveWidth;
+						missBy = -60;
 					}
-					else if (weaveCounter < weaveWidth){
+					else if (weaveCounter < 40){
 						//weave right
-						missBy = weaveWidth;
+						missBy = 60;
 					}
 					else {
 						weaveCounter = 0;
-						missBy = weaveWidth;
+						missBy = 60;
 					}
 					setTurnRight(bearingToTarget+missBy);
 					setAhead(50);
@@ -106,7 +108,9 @@ public class TheSaboteur extends AdvancedRobot
 					setAhead(50*moveDirection);
 				}
 				else {
-					setTurnRight(bearingToTarget);
+					//get outta dodge!
+//					setTurnRight(bearingToTarget);
+					setTurnRight(bearingToTarget-(90));
 					setBack(50*Math.abs(moveDirection));
 				}
 			}
@@ -243,7 +247,7 @@ public class TheSaboteur extends AdvancedRobot
 		//if we're within x degrees of the target's bearing or really close, shoot
 		if (Math.abs(turnGun) < 5 || (distanceToTarget < 100 && Math.abs(turnGun) < 40))
 		{ 
-			this.setFire(bulletStrength);
+			if (shouldFire) this.setFire(bulletStrength);
 		}
 //		else 
 //		{
