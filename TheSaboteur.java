@@ -5,6 +5,7 @@ import robocode.util.Utils;
 import java.util.ArrayList;
 import java.util.Random;
 import java.awt.Color;
+import java.awt.Graphics2D;
 
 // API help : https://robocode.sourceforge.io/docs/robocode/robocode/Robot.html
 
@@ -18,7 +19,7 @@ public class TheSaboteur extends AdvancedRobot
 	 * run: EverlastEngineering: TheSaboteur
 	 */
 	
-	final private double bulletStrength = 3;
+	private double bulletStrength = 3;
 	final private boolean shouldMove = true;
 	final private boolean shouldFire = true;
 	
@@ -125,6 +126,11 @@ public class TheSaboteur extends AdvancedRobot
 	 * onScannedRobot: What to do when you see another robot
 	 */
 	
+	private int targetPositionX = 0;
+	private int targetPositionY = 0;
+	private double targetLeadX = 0;
+	private double targetLeadY = 0;
+	
 	public void onScannedRobot(ScannedRobotEvent e) {
 //		if (currentTarget != e.getName()) {
 //			//out.printf("Scanned: %s\n", e.getName());
@@ -187,14 +193,16 @@ public class TheSaboteur extends AdvancedRobot
 //		calculate the distance the bullet has to travel (side c)
 		double bestGuessCalculatedDistanceToFutureTarget = distanceToTarget;
 		double leadFiringAngle = 0;
+		double proposedDistanceToTarget = 0;
 //		boolean reversed = false;
 //		Calculate a triangle based on the target's angle and velocity, bulletspeed, etc, to determine its likely location
 //		The "long" side of the triangle won't account for how much longer (or shorter) the time the bullet will take to arrive
 //		I'm sure there is smart math to anticipate this, but i found if I loop the calculation with my best guess, after
 //		five loops the margin of error is well below 1 pixel.
+		double targetAngle = 0;
 		for (int i=0;i<5;i++) {
-			double proposedDistanceToTarget = bestGuessCalculatedDistanceToFutureTarget/bulletSpeed*targetVelocity;
-			double targetAngle = 180 - (360 - absoluteTargetBearing) - targetHeading;
+			proposedDistanceToTarget = bestGuessCalculatedDistanceToFutureTarget/bulletSpeed*targetVelocity;
+			targetAngle = 180 - (360 - absoluteTargetBearing) - targetHeading;
 //			if (C > 180) {
 //				C -= 180;
 //			}
@@ -213,53 +221,91 @@ public class TheSaboteur extends AdvancedRobot
 			bestGuessCalculatedDistanceToFutureTarget = calculatedDistanceToFutureTarget;
 		}
 		
+		
+		
 		//TODO: determine if calculated trajectory would be outside the bounds of the playing field 
 		
-		//calculate target position
-//		double absoluteBearing = heading+bearingToTarget-90;
-//		if (absoluteBearing < 0) absoluteBearing += 360; // convert to 0 degrees east
-//		double absoluteBearingRadians = (absoluteBearing)*Math.PI/180;
-//		double myX = getX();
-//		double myY = this.getBattleFieldHeight()-getY(); // getY returns 0,0 as the BOTTOM LEFT FFS LOL
-//		double xx = myX + distanceToTarget * Math.cos(absoluteBearingRadians);
-//		double yy = myY + distanceToTarget * Math.sin(absoluteBearingRadians);
+//		calculate target position
+		double absoluteBearing = heading+bearingToTarget;
+		if (absoluteBearing < 0) absoluteBearing += 360; 
+		double absoluteBearingRadians = (absoluteBearing)*Math.PI/180;
+		targetPositionX = (int) Math.round(getX() + distanceToTarget * Math.sin(absoluteBearingRadians));
+		targetPositionY = (int) Math.round(getY() + distanceToTarget * Math.cos(absoluteBearingRadians));
 		
-//		out.printf("\n target position: %f %f", xx, yy);
+		//calculate target lead position
+		double targetTravel = bestGuessCalculatedDistanceToFutureTarget/bulletSpeed*targetVelocity; // distance target will travel
+		double targetDirection = convertDegreesFromCompassToGraph(e.getHeading()); // converts angle from being 0 north clockwise to 0 east counter-clockwise
+		targetLeadX = targetPositionX + (targetTravel * Math.cos(Math.toRadians(targetDirection)));
+		targetLeadY = targetPositionY + (targetTravel * Math.sin(Math.toRadians(targetDirection)));
+		
+				
+//		debug(String.format("\n target position: %f %f", targetLeadX, targetLeadY));
 		
 		double radarResetTo = 1.5 * Utils.normalRelativeAngleDegrees(heading + bearingToTarget - radarHeading);
 		setTurnRadarRight(radarResetTo);
-		 
 
 //		double relational_difference = distanceToTarget / 60; 
-		
 //		out.printf("\n distanceToTarget: %f",relational_difference);
 //		out.printf(" cc: %f",cc);
 //		double distance_offset = ((cc+previous)/2) * relational_difference;
 //		out.printf(" distance_offset: %f",distance_offset);
 //		out.printf(" unknown: %f",this.getGunTurnRemaining());
+		
 		double turnGun = Utils.normalRelativeAngleDegrees(bearingToTarget-gunBearing+heading+leadFiringAngle);
-
+			
+		out.printf("turnGun: %f\n", turnGun);
 		
-		//		double delta = bearingDelta.average();
-//		this.setTurnGunRight(Math.abs(turnGun)>5?turnGun:turnGun+(delta*3));
 		this.setTurnGunRight(turnGun);
-		
-		//if we're within x degrees of the target's bearing or really close, shoot
-		if (Math.abs(turnGun) < 5 || (distanceToTarget < 100 && Math.abs(turnGun) < 40))
-		{ 
-			if (shouldFire) this.setFire(bulletStrength);
-		}
-//		else 
+
+//		if (targetLeadX > 0 && targetLeadX < this.getBattleFieldWidth() && targetLeadY > 0 && targetLeadY < this.getBattleFieldHeight())
 //		{
-//			out.printf("turnGun: %f\n", turnGun);
+
 //		}
-		
-		
-		
-//		previous = cc;
-//		previousDistance = distanceToTarget;
-//		previousBearingToTarget = (heading+bearingToTarget);
+
+		if (Math.abs(turnGun) < 5 || (distanceToTarget < 100 && Math.abs(turnGun) < 20))
+			{ //if we're within x degrees of the target's bearing or really close, shoot
+				if (shouldFire) this.setFire(bulletStrength);
+			}
 		tickSinceLastScan = false;
+	}
+	
+
+	private double convertDegreesFromCompassToGraph(double a) {
+		double hmm = (a-90);
+		if (hmm < 0) hmm +=360;
+		hmm = hmm * -1;
+		return hmm;
+	}
+	
+	private void debug(String ds) {
+		debugString += "\n" + ds;
+	}
+	private void debug(double d) {
+		debug(String.format("%f", d));
+	}
+	private void debug(int i) {
+		debug((double)i);
+	}
+	
+	private String debugString = ""; 
+	public void onPaint(Graphics2D g) {
+	    g.setColor(new Color(0xff, 0x00, 0x00, 0x80));
+	 
+//	    g.drawLine((int)targetLeadX, (int)targetLeadY, (int)getX(), (int)getY());
+	    
+	    g.drawLine(targetPositionX,targetPositionY, (int)targetLeadX,(int)targetLeadY);
+	 
+	    // Draw a filled square on top of the scanned robot that covers it
+	    g.fillRect(targetPositionX - 20, targetPositionY - 20, 40, 40);
+	    debug(String.format("Target Lead Point: %03d x %03d y", (int)targetLeadX,(int)targetLeadY));
+	    
+	    g.setColor(new Color(0xDD, 0xDD, 0xDD, 0xDD));
+	    int y=0;
+	    for (String line : debugString.split("\n")) {
+	    		g.drawString(line, 10, (int) Math.round(this.getBattleFieldHeight()-10)+y);
+	    		y -= 15;
+	    }
+	    debugString = "";
 	}
 
 	/**
