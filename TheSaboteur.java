@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.geom.Ellipse2D;
 
 // API help : https://robocode.sourceforge.io/docs/robocode/robocode/Robot.html
 
@@ -21,7 +23,7 @@ public class TheSaboteur extends AdvancedRobot
 	
 	private double bulletStrength = 3;
 	final private boolean shouldMove = true;
-	final private boolean shouldFire = true;
+	final private boolean shouldFire = false;
 	
 	private double distanceToTarget = 0;
 	private double bearingToTarget = 0;
@@ -84,22 +86,27 @@ public class TheSaboteur extends AdvancedRobot
 			//TODO: determine distance to wall, avoid bumping
 			//TODO: determine if getting outta dodge (which will gentle turn while reversing) is going to turn into a wall. if so, go the other way to avoid entrapment
 			
+			
+			
+			
+			
+			//debug(this.getTurnRemaining());
 			if (shouldMove) {
 				weaveCounter ++;
 				if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
 				{
 					double missBy = 0; // setup for a weave pattern
-					if (weaveCounter < 20) { 
+					if (weaveCounter < 30) { 
 						//weave left
-						missBy = -60;
+						missBy = -40;
 					}
-					else if (weaveCounter < 40){
+					else if (weaveCounter < 60){
 						//weave right
-						missBy = 60;
+						missBy = 40;
 					}
 					else {
 						weaveCounter = 0;
-						missBy = 60;
+						missBy = 40;
 					}
 					setTurnRight(bearingToTarget+missBy);
 					setAhead(50);
@@ -112,12 +119,51 @@ public class TheSaboteur extends AdvancedRobot
 					//get outta dodge!
 //					setTurnRight(bearingToTarget);
 					setTurnRight(bearingToTarget-(90));
-					setBack(50*Math.abs(moveDirection));
+					setBack(50);
 				}
 			}
 //			scan();
 //			setTurnRight(0);
 //			setAhead(0);
+			setMaxVelocity(8);
+			int closeness = 100;
+			if (getX()<closeness) {
+				debug("close to left");
+			}
+			else if (getY()<closeness) {
+				debug("close to bottom");
+				if (this.getHeading() > 200 && this.getHeading() < 270) {
+					this.setTurnRight(50);
+					setMaxVelocity(1);
+				}
+				else if (this.getHeading() < 200 && this.getHeading() > 90) {
+					this.setTurnLeft(50);
+					setMaxVelocity(1);
+				}
+			}
+			else if (getX() > this.getBattleFieldWidth()-closeness) {
+				debug("close to right");
+			}
+			else if (getY() > this.getBattleFieldHeight()-closeness) {
+				debug("close to top");
+				if (this.getHeading() > 20 && this.getHeading() < 90) {
+					setMaxVelocity(1);
+					this.setTurnRight(50);
+				}
+				else if (this.getHeading() < 20 && this.getHeading() > 270) {
+					setMaxVelocity(1);
+					this.setTurnLeft(50);
+				}
+				else if (this.getHeading() > 200 && this.getHeading() < 270) {
+					setMaxVelocity(1);
+					this.setTurnLeft(50);
+				}
+				else if (this.getHeading() < 00 && this.getHeading() > 90) {
+					setMaxVelocity(1);
+					this.setTurnRight(50);
+				}
+			}
+			
 			execute();
 		}
 	}
@@ -241,7 +287,7 @@ public class TheSaboteur extends AdvancedRobot
 				
 //		debug(String.format("\n target position: %f %f", targetLeadX, targetLeadY));
 		
-		double radarResetTo = 1.5 * Utils.normalRelativeAngleDegrees(heading + bearingToTarget - radarHeading);
+		double radarResetTo = 1 * Utils.normalRelativeAngleDegrees(heading + bearingToTarget - radarHeading);
 		setTurnRadarRight(radarResetTo);
 
 //		double relational_difference = distanceToTarget / 60; 
@@ -253,7 +299,7 @@ public class TheSaboteur extends AdvancedRobot
 		
 		double turnGun = Utils.normalRelativeAngleDegrees(bearingToTarget-gunBearing+heading+leadFiringAngle);
 			
-		out.printf("turnGun: %f\n", turnGun);
+//		out.printf("turnGun: %f\n", turnGun);
 		
 		this.setTurnGunRight(turnGun);
 
@@ -293,11 +339,11 @@ public class TheSaboteur extends AdvancedRobot
 	 
 //	    g.drawLine((int)targetLeadX, (int)targetLeadY, (int)getX(), (int)getY());
 	    
-	    g.drawLine(targetPositionX,targetPositionY, (int)targetLeadX,(int)targetLeadY);
+//	    g.drawLine((int)this.getX(),(int)this.getY(), (int)targetLeadX,(int)targetLeadY);
 	 
 	    // Draw a filled square on top of the scanned robot that covers it
 	    g.fillRect(targetPositionX - 20, targetPositionY - 20, 40, 40);
-	    debug(String.format("Target Lead Point: %03d x %03d y", (int)targetLeadX,(int)targetLeadY));
+//	    debug(String.format("Target Lead Point: %03d x %03d y", (int)targetLeadX,(int)targetLeadY));
 	    
 	    g.setColor(new Color(0xDD, 0xDD, 0xDD, 0xDD));
 	    int y=0;
@@ -306,6 +352,13 @@ public class TheSaboteur extends AdvancedRobot
 	    		y -= 15;
 	    }
 	    debugString = "";
+	    
+	    Ellipse2D.Double hole = new Ellipse2D.Double();
+	    hole.width = 28;
+	    hole.height = 28;
+	    hole.x = (int)targetLeadX;
+	    hole.y = (int)targetLeadY;
+	    g.draw(hole);
 	}
 
 	/**
