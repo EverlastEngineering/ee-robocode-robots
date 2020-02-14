@@ -23,7 +23,7 @@ public class TheSaboteur extends AdvancedRobot
 	
 	private double bulletStrength = 3;
 	final private boolean shouldMove = true;
-	final private boolean shouldFire = false;
+	final private boolean shouldFire = true;
 	
 	private double distanceToTarget = 0;
 	private double bearingToTarget = 0;
@@ -95,19 +95,19 @@ public class TheSaboteur extends AdvancedRobot
 				weaveCounter ++;
 				if (distanceToTarget > 200) // kamakazeeeee! If they're far away, then weave 
 				{
-					double missBy = 0; // setup for a weave pattern
-					if (weaveCounter < 30) { 
-						//weave left
-						missBy = -40;
-					}
-					else if (weaveCounter < 60){
-						//weave right
-						missBy = 40;
-					}
-					else {
-						weaveCounter = 0;
-						missBy = 40;
-					}
+				double missBy = 0; // setup for a weave pattern
+				if (weaveCounter < 30) { 
+					//weave left
+					missBy = -40;
+				}
+				else if (weaveCounter < 60){
+					//weave right
+					missBy = 40;
+				}
+				else {
+					weaveCounter = 0;
+					missBy = 40;
+				}
 					setTurnRight(bearingToTarget+missBy);
 					setAhead(50);
 				}
@@ -335,17 +335,18 @@ public class TheSaboteur extends AdvancedRobot
 	
 	private String debugString = ""; 
 	public void onPaint(Graphics2D g) {
-	    g.setColor(new Color(0xff, 0x00, 0x00, 0x80));
-	 
+	    
+		g.setColor(new Color(0xDD, 0xDD, 0xDD, 0xDD));
 //	    g.drawLine((int)targetLeadX, (int)targetLeadY, (int)getX(), (int)getY());
 	    
 //	    g.drawLine((int)this.getX(),(int)this.getY(), (int)targetLeadX,(int)targetLeadY);
 	 
 	    // Draw a filled square on top of the scanned robot that covers it
-	    g.fillRect(targetPositionX - 20, targetPositionY - 20, 40, 40);
+//	    g.fillRect();
+	    
 //	    debug(String.format("Target Lead Point: %03d x %03d y", (int)targetLeadX,(int)targetLeadY));
 	    
-	    g.setColor(new Color(0xDD, 0xDD, 0xDD, 0xDD));
+	    
 	    int y=0;
 	    for (String line : debugString.split("\n")) {
 	    		g.drawString(line, 10, (int) Math.round(this.getBattleFieldHeight()-10)+y);
@@ -353,12 +354,12 @@ public class TheSaboteur extends AdvancedRobot
 	    }
 	    debugString = "";
 	    
-	    Ellipse2D.Double hole = new Ellipse2D.Double();
-	    hole.width = 28;
-	    hole.height = 28;
-	    hole.x = (int)targetLeadX;
-	    hole.y = (int)targetLeadY;
-	    g.draw(hole);
+
+	    g.draw(new Ellipse2D.Double((int)targetLeadX-14,(int)targetLeadY-14,28,28));
+	    g.drawLine((int)targetLeadX,(int)targetLeadY-20,(int)targetLeadX,(int)targetLeadY+20);
+	    g.drawLine((int)targetLeadX-20,(int)targetLeadY,(int)targetLeadX+20,(int)targetLeadY);
+	    g.setColor(new Color(0xff, 0x00, 0x00, 0x80));
+	    g.fill(new Ellipse2D.Double(targetPositionX - 20, targetPositionY - 20, 40, 40));
 	}
 
 	/**
