@@ -21,7 +21,7 @@ public class TheSaboteur extends AdvancedRobot
 	 * run: EverlastEngineering: TheSaboteur
 	 */
 	
-	private double bulletStrength = 3;
+	private double bulletStrength = 0.1;
 	final private boolean shouldMove = true;
 	final private boolean shouldFire = true;
 	
@@ -122,6 +122,8 @@ public class TheSaboteur extends AdvancedRobot
 					setBack(50);
 				}
 			}
+			//TODO go in circles sometimes when no target?
+			//TODO plot position / vector of all targets, pick safe spot away from walls and tanks to chill
 //			scan();
 //			setTurnRight(0);
 //			setAhead(0);
