@@ -22,7 +22,7 @@ public class TheSaboteur extends AdvancedRobot
 	 * run: EverlastEngineering: TheSaboteur
 	 */
 	
-	private double bulletStrength = 0.1;
+	private double bulletStrength = 3;
 	final private boolean shouldMove = true;
 	final private boolean shouldFire = true;
 	
@@ -53,11 +53,15 @@ public class TheSaboteur extends AdvancedRobot
 
 		// face direction for testing
 //		this.setTurnLeft(this.getHeading()+90);
+		if (!shouldMove) {
+			turnLeft(this.getHeading());
+		}
 		
 		// Robot main loop
 		int weaveCounter = 0;
 		setTurnRadarRight(10360);
 		execute();
+		
 
 		while(true) {
 			tickSinceLastScan = true;
@@ -123,6 +127,7 @@ public class TheSaboteur extends AdvancedRobot
 					setBack(50);
 				}
 			}
+			
 			//TODO go in circles sometimes when no target?
 			//TODO plot position / vector of all targets, pick safe spot away from walls and tanks to chill
 //			scan();
@@ -247,25 +252,27 @@ public class TheSaboteur extends AdvancedRobot
 //		I'm sure there is smart math to anticipate this, but i found if I loop the calculation with my best guess, after
 //		five loops the margin of error is well below 1 pixel.
 		double targetAngle = 0;
-		for (int i=0;i<5;i++) {
-			proposedDistanceToTarget = bestGuessCalculatedDistanceToFutureTarget/bulletSpeed*targetVelocity;
-			targetAngle = 180 - (360 - absoluteTargetBearing) - targetHeading;
-//			if (C > 180) {
-//				C -= 180;
-//			}
-//			else if (C < -180) {
-//				C += 180;
-//			}
-			targetAngle = Utils.normalRelativeAngleDegrees(targetAngle);
-//			c2=a2+b2−2abcosγ - determine length of 3rd side of triangle using SAS
-//			remember cos and acos use RADIANS, so convert degrees to radians by degrees*pi/180
-			double calculatedDistanceToFutureTarget = Math.sqrt(Math.pow(distanceToTarget,2) + Math.pow(proposedDistanceToTarget,2) - (2*distanceToTarget*proposedDistanceToTarget*Math.cos(targetAngle*Math.PI/180)));
-//			next find the B angle using SS
-//			cos B = (a2 + c2 − b2)/2ac
-//			remember cos and acos use RADIANS, so convert acos BACK to degrees with radians/pi*180	
-			leadFiringAngle = Math.acos((Math.pow(distanceToTarget, 2) + Math.pow(calculatedDistanceToFutureTarget,2) - Math.pow(proposedDistanceToTarget,2))/(2*distanceToTarget*calculatedDistanceToFutureTarget))*180/Math.PI;
-			if (targetAngle < 0) leadFiringAngle = leadFiringAngle * -1; 
-			bestGuessCalculatedDistanceToFutureTarget = calculatedDistanceToFutureTarget;
+		if (targetVelocity > 1) {
+			for (int i=0;i<5;i++) {
+				proposedDistanceToTarget = bestGuessCalculatedDistanceToFutureTarget/bulletSpeed*targetVelocity;
+				targetAngle = 180 - (360 - absoluteTargetBearing) - targetHeading;
+	//			if (C > 180) {
+	//				C -= 180;
+	//			}
+	//			else if (C < -180) {
+	//				C += 180;
+	//			}
+				targetAngle = Utils.normalRelativeAngleDegrees(targetAngle);
+	//			c2=a2+b2−2abcosγ - determine length of 3rd side of triangle using SAS
+	//			remember cos and acos use RADIANS, so convert degrees to radians by degrees*pi/180
+				double calculatedDistanceToFutureTarget = Math.sqrt(Math.pow(distanceToTarget,2) + Math.pow(proposedDistanceToTarget,2) - (2*distanceToTarget*proposedDistanceToTarget*Math.cos(targetAngle*Math.PI/180)));
+	//			next find the B angle using SS
+	//			cos B = (a2 + c2 − b2)/2ac
+	//			remember cos and acos use RADIANS, so convert acos BACK to degrees with radians/pi*180	
+				leadFiringAngle = Math.acos((Math.pow(distanceToTarget, 2) + Math.pow(calculatedDistanceToFutureTarget,2) - Math.pow(proposedDistanceToTarget,2))/(2*distanceToTarget*calculatedDistanceToFutureTarget))*180/Math.PI;
+				if (targetAngle < 0) leadFiringAngle = leadFiringAngle * -1; 
+				bestGuessCalculatedDistanceToFutureTarget = calculatedDistanceToFutureTarget;
+			}
 		}
 		
 		
@@ -284,28 +291,34 @@ public class TheSaboteur extends AdvancedRobot
 		double targetDirection = convertDegreesFromCompassToGraph(e.getHeading()); // converts angle from being 0 north clockwise to 0 east counter-clockwise
 		targetLead.setLocation(targetPosition.x + (targetTravel * Math.cos(Math.toRadians(targetDirection))), targetPosition.y + (targetTravel * Math.sin(Math.toRadians(targetDirection))));
 				
+		int offset = 18;
 		//check intersection to left wall:
-		Point leftIntersection = this.lineLineIntersection(new Point(0,0), new Point(0,(int)this.getBattleFieldHeight()), targetPosition, targetLead);
-		Point bottomIntersection = this.lineLineIntersection(new Point(0,0), new Point((int)this.getBattleFieldWidth(),0), targetPosition, targetLead);
-		Point rightIntersection = this.lineLineIntersection(new Point((int)this.getBattleFieldWidth(),0), new Point((int)this.getBattleFieldWidth(),(int)this.getBattleFieldHeight()), targetPosition, targetLead);
-		Point topIntersection = this.lineLineIntersection(new Point(0,(int)this.getBattleFieldHeight()), new Point((int)this.getBattleFieldWidth(),(int)this.getBattleFieldHeight()), targetPosition, targetLead);
-		
-		if (leftIntersection != null)
-		{
-			debug("leftIntersection!");
+		Point intersection = null;
+		//left
+		Point leftintersection = this.lineLineIntersection(new Point(offset,0), new Point(offset,(int)this.getBattleFieldHeight()), targetPosition, targetLead);
+		Point bottomIntersection = this.lineLineIntersection(new Point(0,offset), new Point((int)this.getBattleFieldWidth(),offset), targetPosition, targetLead);
+		Point rightIntersection = this.lineLineIntersection(new Point((int)this.getBattleFieldWidth()-offset,0), new Point((int)this.getBattleFieldWidth()-offset,(int)this.getBattleFieldHeight()), targetPosition, targetLead);
+		Point topIntersection = this.lineLineIntersection(new Point(0,(int)this.getBattleFieldHeight()-offset), new Point((int)this.getBattleFieldWidth(),(int)this.getBattleFieldHeight()-offset), targetPosition, targetLead);
+
+		if (leftintersection!=null) {
+			intersection = leftintersection;
 		}
-		else if (bottomIntersection != null)
-		{
-			debug("bottomIntersection!");
+		if (bottomIntersection!=null) {
+			if (intersection == null || distanceBetweenTwoPoints(targetPosition, bottomIntersection) < distanceBetweenTwoPoints(targetPosition, intersection)) {
+				intersection = bottomIntersection;
+			}
 		}
-		else if (rightIntersection != null)
-		{
-			debug("rightIntersection!");
+		if (rightIntersection!=null) {
+			if (intersection == null || distanceBetweenTwoPoints(targetPosition, rightIntersection) < distanceBetweenTwoPoints(targetPosition, intersection)) {
+				intersection = rightIntersection;
+			}
 		}
-		else if (topIntersection != null)
-		{
-			debug("topIntersection!");
+		if (topIntersection!=null) {
+			if (intersection == null || distanceBetweenTwoPoints(targetPosition, topIntersection) < distanceBetweenTwoPoints(targetPosition, intersection)) {
+				intersection = topIntersection;
+			}
 		}
+
 
 //		debug(String.format("\n target position: %f %f", targetLeadX, targetLeadY));
 		
@@ -319,10 +332,24 @@ public class TheSaboteur extends AdvancedRobot
 //		out.printf(" distance_offset: %f",distance_offset);
 //		out.printf(" unknown: %f",this.getGunTurnRemaining());
 		
-		double turnGun = Utils.normalRelativeAngleDegrees(bearingToTarget-gunBearing+heading+leadFiringAngle);
+		
 			
 //		out.printf("turnGun: %f\n", turnGun);
-		
+		double turnGun = 0;
+		if (intersection != null)
+		{
+			debug(String.format("intersection: x: %d y: %d", intersection.x, intersection.y));
+			double delta_x = intersection.getX() - this.getX();
+ 			double delta_y = intersection.getY()- this.getY();
+			double theta_radians = Math.atan2(delta_y,delta_x);
+			double alternateBearing = Math.toDegrees(theta_radians);
+			double alternateBearing2 = convertDegreesToCompassFromGraph(alternateBearing);
+			double bbearing = bearingToTarget;
+			turnGun = Utils.normalRelativeAngleDegrees(alternateBearing2-gunBearing);
+		}
+		else {
+			turnGun = Utils.normalRelativeAngleDegrees(bearingToTarget-gunBearing+heading+leadFiringAngle);
+		}
 		this.setTurnGunRight(turnGun);
 
 //		if (targetLeadX > 0 && targetLeadX < this.getBattleFieldWidth() && targetLeadY > 0 && targetLeadY < this.getBattleFieldHeight())
@@ -337,11 +364,22 @@ public class TheSaboteur extends AdvancedRobot
 		tickSinceLastScan = false;
 	}
 	
+	private double distanceBetweenTwoPoints(Point A, Point B)
+	{
+		return Math.sqrt((B.x-A.x)*(B.x-A.x) + (B.y-A.y)*(B.y-A.y));	
+	}
 
 	private double convertDegreesFromCompassToGraph(double a) {
 		double hmm = (a-90);
 		if (hmm < 0) hmm +=360;
 		hmm = hmm * -1;
+		return hmm;
+	}
+	
+	private double convertDegreesToCompassFromGraph(double a) {
+		double hmm = a * -1;
+		hmm = (hmm+90);
+		if (hmm > 360) hmm -=360;
 		return hmm;
 	}
 	
@@ -419,7 +457,7 @@ public class TheSaboteur extends AdvancedRobot
 	private Point lineLineIntersection(Point A, Point B, Point C, Point D) 
     { 
         // Line AB represented as a1x + b1y = c1 
-		Point nullPoint = new Point(0,0); //a-harhar
+//		Point nullPoint = new Point(0,0); //a-harhar
         double a1 = B.y - A.y; 
         double b1 = A.x - B.x; 
         double c1 = a1*(A.x) + b1*(A.y); 
@@ -439,8 +477,8 @@ public class TheSaboteur extends AdvancedRobot
         } 
         else
         { 
-            int x = (int)Math.round((b2*c1 - b1*c2)/determinant); 
-            int y = (int)Math.round((a1*c2 - a2*c1)/determinant); 
+            int x = Math.abs((int)Math.round((b2*c1 - b1*c2)/determinant)); 
+            int y = Math.abs((int)Math.round((a1*c2 - a2*c1)/determinant)); 
             
             if (isBetween(C.x, D.x, x) && isBetween(C.y, D.y, y)) {
             		return new Point(x, y);
