@@ -284,6 +284,29 @@ public class TheSaboteur extends AdvancedRobot
 		double targetDirection = convertDegreesFromCompassToGraph(e.getHeading()); // converts angle from being 0 north clockwise to 0 east counter-clockwise
 		targetLead.setLocation(targetPosition.x + (targetTravel * Math.cos(Math.toRadians(targetDirection))), targetPosition.y + (targetTravel * Math.sin(Math.toRadians(targetDirection))));
 				
+		//check intersection to left wall:
+		Point leftIntersection = this.lineLineIntersection(new Point(0,0), new Point(0,(int)this.getBattleFieldHeight()), targetPosition, targetLead);
+		Point bottomIntersection = this.lineLineIntersection(new Point(0,0), new Point((int)this.getBattleFieldWidth(),0), targetPosition, targetLead);
+		Point rightIntersection = this.lineLineIntersection(new Point((int)this.getBattleFieldWidth(),0), new Point((int)this.getBattleFieldWidth(),(int)this.getBattleFieldHeight()), targetPosition, targetLead);
+		Point topIntersection = this.lineLineIntersection(new Point(0,(int)this.getBattleFieldHeight()), new Point((int)this.getBattleFieldWidth(),(int)this.getBattleFieldHeight()), targetPosition, targetLead);
+		
+		if (leftIntersection != null)
+		{
+			debug("leftIntersection!");
+		}
+		else if (bottomIntersection != null)
+		{
+			debug("bottomIntersection!");
+		}
+		else if (rightIntersection != null)
+		{
+			debug("rightIntersection!");
+		}
+		else if (topIntersection != null)
+		{
+			debug("topIntersection!");
+		}
+
 //		debug(String.format("\n target position: %f %f", targetLeadX, targetLeadY));
 		
 		double radarResetTo = 1 * Utils.normalRelativeAngleDegrees(heading + bearingToTarget - radarHeading);
@@ -392,6 +415,44 @@ public class TheSaboteur extends AdvancedRobot
 //		setAhead(200);
 //		execute();
 	}	
+	
+	private Point lineLineIntersection(Point A, Point B, Point C, Point D) 
+    { 
+        // Line AB represented as a1x + b1y = c1 
+		Point nullPoint = new Point(0,0); //a-harhar
+        double a1 = B.y - A.y; 
+        double b1 = A.x - B.x; 
+        double c1 = a1*(A.x) + b1*(A.y); 
+       
+        // Line CD represented as a2x + b2y = c2 
+        double a2 = D.y - C.y; 
+        double b2 = C.x - D.x; 
+        double c2 = a2*(C.x)+ b2*(C.y); 
+       
+        double determinant = a1*b2 - a2*b1; 
+       
+        if (determinant == 0) 
+        { 
+            // The lines are parallel. This is simplified 
+            // by returning a pair of FLT_MAX 
+            return null;
+        } 
+        else
+        { 
+            int x = (int)Math.round((b2*c1 - b1*c2)/determinant); 
+            int y = (int)Math.round((a1*c2 - a2*c1)/determinant); 
+            
+            if (isBetween(C.x, D.x, x) && isBetween(C.y, D.y, y)) {
+            		return new Point(x, y);
+            }
+            return null;
+        }
+
+    } 
+	
+    public static boolean isBetween(int rangeValueA, int rangeValueB, int valueToCheck) {
+        return rangeValueB > rangeValueA ? valueToCheck > rangeValueA && valueToCheck < rangeValueB : valueToCheck > rangeValueB && valueToCheck < rangeValueA;
+    }
 	
 	public class AveragedArray {
 		private ArrayList<Double> arrayList = new ArrayList<Double>();
