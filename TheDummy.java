@@ -21,13 +21,14 @@ public class TheDummy extends AdvancedRobot
 		// and the next line:
 
 		 setColors(Color.red,Color.blue,Color.green); // body,gun,radar
-		 double aa = this.getHeading(); 
-		 setTurnLeft(90-aa);
+		 
+//		 turnLeft(this.getHeading()); // face north
 		// Robot main loop
 		while(true) {
-			turnRight(180); 
+//			this.getHeading();
 			ahead(1000);
-//			execute();
+			turnRight(180); 
+			scan();
 		}
 	}
 
