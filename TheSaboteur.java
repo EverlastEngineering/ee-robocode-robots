@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.geom.Ellipse2D;
 
@@ -174,10 +175,8 @@ public class TheSaboteur extends AdvancedRobot
 	 * onScannedRobot: What to do when you see another robot
 	 */
 	
-	private int targetPositionX = 0;
-	private int targetPositionY = 0;
-	private double targetLeadX = 0;
-	private double targetLeadY = 0;
+	private Point targetPosition = new Point(0,0);
+	private Point targetLead = new Point(0,0);
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
 //		if (currentTarget != e.getName()) {
@@ -277,15 +276,13 @@ public class TheSaboteur extends AdvancedRobot
 		double absoluteBearing = heading+bearingToTarget;
 		if (absoluteBearing < 0) absoluteBearing += 360; 
 		double absoluteBearingRadians = (absoluteBearing)*Math.PI/180;
-		targetPositionX = (int) Math.round(getX() + distanceToTarget * Math.sin(absoluteBearingRadians));
-		targetPositionY = (int) Math.round(getY() + distanceToTarget * Math.cos(absoluteBearingRadians));
+		targetPosition.x = (int) Math.round(getX() + distanceToTarget * Math.sin(absoluteBearingRadians));
+		targetPosition.y = (int) Math.round(getY() + distanceToTarget * Math.cos(absoluteBearingRadians));
 		
 		//calculate target lead position
 		double targetTravel = bestGuessCalculatedDistanceToFutureTarget/bulletSpeed*targetVelocity; // distance target will travel
 		double targetDirection = convertDegreesFromCompassToGraph(e.getHeading()); // converts angle from being 0 north clockwise to 0 east counter-clockwise
-		targetLeadX = targetPositionX + (targetTravel * Math.cos(Math.toRadians(targetDirection)));
-		targetLeadY = targetPositionY + (targetTravel * Math.sin(Math.toRadians(targetDirection)));
-		
+		targetLead.setLocation(targetPosition.x + (targetTravel * Math.cos(Math.toRadians(targetDirection))), targetPosition.y + (targetTravel * Math.sin(Math.toRadians(targetDirection))));
 				
 //		debug(String.format("\n target position: %f %f", targetLeadX, targetLeadY));
 		
@@ -339,14 +336,14 @@ public class TheSaboteur extends AdvancedRobot
 	public void onPaint(Graphics2D g) {
 	    
 		g.setColor(new Color(0xDD, 0xDD, 0xDD, 0xDD));
-//	    g.drawLine((int)targetLeadX, (int)targetLeadY, (int)getX(), (int)getY());
+//	    g.drawLine(targetLead.x, targetLead.y, (int)getX(), (int)getY());
 	    
-//	    g.drawLine((int)this.getX(),(int)this.getY(), (int)targetLeadX,(int)targetLeadY);
+//	    g.drawLine((int)this.getX(),(int)this.getY(), targetLead.x,targetLead.y);
 	 
 	    // Draw a filled square on top of the scanned robot that covers it
 //	    g.fillRect();
 	    
-//	    debug(String.format("Target Lead Point: %03d x %03d y", (int)targetLeadX,(int)targetLeadY));
+//	    debug(String.format("Target Lead Point: %03d x %03d y", targetLead.x,targetLead.y));
 	    
 	    
 	    int y=0;
@@ -357,11 +354,11 @@ public class TheSaboteur extends AdvancedRobot
 	    debugString = "";
 	    
 
-	    g.draw(new Ellipse2D.Double((int)targetLeadX-14,(int)targetLeadY-14,28,28));
-	    g.drawLine((int)targetLeadX,(int)targetLeadY-20,(int)targetLeadX,(int)targetLeadY+20);
-	    g.drawLine((int)targetLeadX-20,(int)targetLeadY,(int)targetLeadX+20,(int)targetLeadY);
+	    g.draw(new Ellipse2D.Double(targetLead.x-14,targetLead.y-14,28,28));
+	    g.drawLine(targetLead.x,targetLead.y-20,targetLead.x,targetLead.y+20);
+	    g.drawLine(targetLead.x-20,targetLead.y,targetLead.x+20,targetLead.y);
 	    g.setColor(new Color(0xff, 0x00, 0x00, 0x80));
-	    g.fill(new Ellipse2D.Double(targetPositionX - 20, targetPositionY - 20, 40, 40));
+	    g.fill(new Ellipse2D.Double(targetPosition.x - 20, targetPosition.y - 20, 40, 40));
 	}
 
 	/**
